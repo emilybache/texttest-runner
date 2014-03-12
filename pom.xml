@@ -3,7 +3,7 @@
 
     <groupId>org.texttest</groupId>
     <artifactId>texttest-runner</artifactId>
-    <version>3.26-SNAPSHOT</version>
+    <version>3.26</version>
     <name>TextTest test runner</name>
 
     <parent>
