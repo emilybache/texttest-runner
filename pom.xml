@@ -3,7 +3,7 @@
 
     <groupId>org.texttest</groupId>
     <artifactId>texttest-runner</artifactId>
-    <version>3.26</version>
+    <version>3.26-SNAPSHOT</version>
     <name>TextTest test runner</name>
 
     <parent>
@@ -34,6 +34,11 @@
       <id>gjb1002</id>
       <name>Geoff Bache</name>
       <email>geoff.bache@pobox.com</email>
+    </developer>
+    <developer>
+      <id>emilybache</id>
+      <name>Emily Bache</name>
+      <email>emily.bache@cantab.net</email>
     </developer>
   </developers>
 
