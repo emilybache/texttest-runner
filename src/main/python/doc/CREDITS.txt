@@ -1,0 +1,25 @@
+Code Maintainers:                                        
+
+    Geoff Bache
+    Daniel Galdames
+
+Developers:
+
+    Geoff Bache
+    Daniel Galdames
+    Mattias Grönkvist
+    Johan Ivarsson
+    Johan Andersson
+
+Contributors:
+
+    Patrik Blommaskog
+    Per Bergsten
+    Emily Bache
+    Nicolas Gattario
+    Claes Verdoes
+    Henning Thornblad
+    Michael Behrisch
+    Örjan Råberg
+    Matthew Baker
+

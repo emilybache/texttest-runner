@@ -1,0 +1,159 @@
+
+[logger_root]
+handlers=root
+level=ERROR
+
+[handler_root]
+class=StreamHandler
+level=ERROR
+args=(sys.stdout,)
+
+[handler_stdout]
+class=StreamHandler
+args=(sys.stdout,)
+#formatter=timed
+
+[formatter_timed]
+format=%(asctime)s - %(message)s
+
+[formatter_debug]
+format=%(name)s %(levelname)s - %(message)s
+
+# ====== The following are enabled by default ======
+# ======= Section for gui log ======
+[logger_gui log]
+handlers=gui log
+qualname=gui log
+level=INFO
+
+[handler_gui log]
+class=FileHandler
+#formatter=timed
+#args=(os.devnull, 'a')
+args=('gui_log.sample', 'a')
+
+# ======= Section for storytext replay log ======
+[logger_storytext replay log]
+handlers=gui log
+qualname=storytext replay log
+level=INFO
+
+# ====== The following are disabled by default ======
+# ======= Section for Centre finding ======
+[logger_Centre finding]
+handlers=Centre finding
+qualname=Centre finding
+#level=INFO
+
+[handler_Centre finding]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('centrefinding.sample', 'a')
+
+# ======= Section for Eclipse RCP jobs ======
+[logger_Eclipse RCP jobs]
+handlers=Eclipse RCP jobs
+qualname=Eclipse RCP jobs
+#level=INFO
+
+[handler_Eclipse RCP jobs]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('eclipsercpjobs.sample', 'a')
+
+# ======= Section for Indexer ======
+[logger_Indexer]
+handlers=Indexer
+qualname=Indexer
+#level=INFO
+
+[handler_Indexer]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('indexer.sample', 'a')
+
+# ======= Section for Shortcut Tracker ======
+[logger_Shortcut Tracker]
+handlers=Shortcut Tracker
+qualname=Shortcut Tracker
+#level=INFO
+
+[handler_Shortcut Tracker]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('shortcuttracker.sample', 'a')
+
+# ======= Section for TreeModelIndexer ======
+[logger_TreeModelIndexer]
+handlers=TreeModelIndexer
+qualname=TreeModelIndexer
+#level=INFO
+
+[handler_TreeModelIndexer]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('treemodelindexer.sample', 'a')
+
+# ======= Section for TreeViewDescriber ======
+[logger_TreeViewDescriber]
+handlers=TreeViewDescriber
+qualname=TreeViewDescriber
+#level=INFO
+
+[handler_TreeViewDescriber]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('treeviewdescriber.sample', 'a')
+
+# ======= Section for gui map ======
+[logger_gui map]
+handlers=gui map
+qualname=gui map
+#level=INFO
+
+[handler_gui map]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('guimap.sample', 'a')
+
+# ======= Section for storytext record ======
+[logger_storytext record]
+handlers=storytext record
+qualname=storytext record
+#level=INFO
+
+[handler_storytext record]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('storytextrecord.sample', 'a')
+
+# ======= Section for widget structure ======
+[logger_widget structure]
+handlers=widget structure
+qualname=widget structure
+#level=INFO
+
+[handler_widget structure]
+class=FileHandler
+formatter=debug
+args=(os.devnull, 'a')
+#args=('widgetstructure.sample', 'a')
+
+# ====== Cruft that python logging module needs ======
+[loggers]
+keys=root,gui log,storytext replay log,Centre finding,Eclipse RCP jobs,Indexer,Shortcut Tracker,TreeModelIndexer,TreeViewDescriber,gui map,storytext record,widget structure
+
+[handlers]
+keys=root,Centre finding,Eclipse RCP jobs,Indexer,Shortcut Tracker,TreeModelIndexer,TreeViewDescriber,gui log,gui map,stdout,storytext record,widget structure
+
+[formatters]
+keys=timed,debug
+

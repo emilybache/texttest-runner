@@ -1,0 +1,781 @@
+Version 0.1:
+
+    - initial release
+
+Version 0.2:
+
+    - refactoring of API to base all state-based widgets on focus (keyboard and mouse) rather than on things like
+      "changed" signals. Particularly the TreeSelection code is simpler now and easier to use: all "set programatically"
+      methods removed as there is no need to tell the script engine this any more.
+    - added option '-delay' for allowing a pause between replaying each action, useful if somebody is trying to see what
+      happens in the GUI.
+
+Version 1.0:
+    - Support added for monitoring external processes started by the system under test, both recording their termination
+	and simulating any updates to files they may have made at the time.
+    - Fixed deprecated items in newer versions of PyGTK
+    - 'Keyboard mnemonic accelerators' created for the GUI shortcuts produced for PyGTK GUIs
+    - Various refactorings
+
+Version 1.1:
+    - Made handling of programmatic changes simpler and easier to manage. Most widgets with state
+      are handled via the focus which is easier to manage and less prone to occasional error.
+    - Prevented programmatic changes of page in gtk.Notebook (via the set_current_page method) from being recorded.
+    - Shortcut bar no longer crashes if you press start and stop with no action in between.
+
+Version 1.2:
+    - Decided the focus was a flaky way to handle programmatic change. Now done by method interception
+      which is foolproof so long as we remember to intercept all the appropriate methods.
+    - removed hack for deleting windows. Introduced a new one instead which should work better on
+      the more recent versions of PyGTK. Now manually calls all the listeners and then calls window.destroy(). 
+    - New RadioGroupIndexer to aid recording/replaying radio buttons
+    - Nothing is recorded on widgets with the visible property set to False.
+    - gtk.TreeSelection management overhauled. Should work better when used actively: i.e. when things
+      are triggered by selecting rows rather than just getting the selection when doing other things.
+    - Application can now decide how to create gtk.Notebook widgets, rather than PyUseCase deciding for it
+    - Can now monitor expanding and collapsing of gtk.TreeView rows.
+    - Can now monitor toggling of gtk.CellRendererToggle widgets
+    - Can now handle usage of gtk.TreeModelFilter in gtk.TreeView widgets
+    - Time delay on application events performed in correct thread, race condition fixed
+    - Application events recorded as a single wait when there are several in different categories, rather
+      than as several individual waits.
+    - Re-work to reuse the process code from TextTest rather assume an interface. New module process.py created.
+
+Version 1.3:
+------------
+Generic module (usecase.py):
+    - Slimmed down process.py module a lot as most of it is rendered unnecessary by Python 2.4's subprocess module.
+      Now concentrate on handling "job processes" i.e. a process and its children, so that they can be found and killed
+      if needed. Module renamed "jobprocess.py" accordingly.
+    - Fixed bug that didn't allow the same application event to be repeated at a later date
+    - Fixed timing bug when files are edited and processes killed : don't replay in the wrong order...
+    - Now record process termination before application events as the former can trigger the latter
+PyGTK module (gtkusecase.py):
+    - support added for handling FileChoosers (both the _OPEN and _SAVE varieties)
+      This is complex as a lot of things seem to happen asynchronously on Windows and PyGTK's access to 
+      the widget internals of FileChoosers is a bit incomplete.
+    - various tweaks to gtk.TreeSelection handling to make it more robust
+    - Fixed bug so that nested programmatic changes work properly
+
+Version 1.4:
+------------
+Generic module (usecase.py):
+    - Allow application event renaming. Sometimes identifiers change in the system, and it's necessary to
+      tell PyUseCase about this so it can update any application events that are thereby discovered to have
+      already happened (with the old name).
+PyGTK module (gtkusecase.py):
+    - TreeModelIndexer for handling tree views internalised and simplified, 
+      now do everything via a single "monitor" call and don't need to create TreeModelIndexers externally,
+      or have application-specific code to identify rows uniquely
+    - new method registerCellToggleButton, this isn't handled via "connect" any more and should work better.
+    - PaneDragEvent improved. Should work for gtk.Paned instances that set the shrink property to False also.
+    - TreeSelectionEvent removed noImplies parameter. Unclear what it was used for.
+
+Version 1.4.1:
+--------------
+Generic module (usecase.py):
+    - Bugfixes to improve determinism around application events, making sure the wait occurs in a predictable place.
+      Looks ahead to avoid creating threads or idle handlers which will only end up waiting anyway.
+    - Bugfixes for process termination on Windows. This now requires Python 2.5 to work correctly. 
+
+Version 1.4.2:
+--------------
+Process-handling module (jobprocess.py):
+    - Restored code to kill arbitrary processes, not just subprocesses, on Windows. New interface.
+
+Version 2.0:
+-----------
+New module (gtklogger.py)
+    - A completely new aspect to PyUseCase, which can now produce you a standard log
+      of everything that happens in your GUI, which should serve as a baselin for e.g. TextTest.
+Generic module (usecase.py)
+    - New "supercede" category for application events, allowing them to override more than one
+      category without overriding them all.
+    - Application event logging when replaying happens just before proceeding, for determinism
+    - Fixed bug where recording a shortcut missed the last action
+    - dropped log4py and externally received loggers, now use logging module
+    - Handles Python 2.6 without deprecation warnings
+    - Signal recording made more robust, doesn't require something else to happen before it comes into effect (!)
+    - Bug fix where rollback failed if the next command was a wait.
+PyGTK module (gtkusecase.py)
+    - Lowered priority of replay idle handler. Means all the timing hacks could be removed.
+    - Handle programmatic changes in filechoosers via set_filename
+    - new monitorSignal method, so that using PyUseCase can involve only adding code rather than editing it
+	
+Version 3.0:
+-----------
+Radical new approach (gtkusecase.py)
+    - No longer requires any instrumentation in your code for GUI testing.
+	"UI map" stored in a separate file. See website. Instrumentation still works
+	and auto-generates you a new UI map, after which you can delete it.
+	Can now operate from the command-line entirely outside your code, run "pyusecase".
+Generic module (usecase.py)
+    - applicationEvent and applicationEventRename are now module-level functions and basically are the API.
+    - Removed "process termination monitoring", "file edit monitoring" and "stdin recording" functionality
+	In the first two cases there are better ways in TextTest. In the last it was deemed not useful.
+    - Fixed crash on receiving SIGINT if application has no handler for it.
+    - Fixed bug where timeDelay on application event only used if the event hadn't already occurred.
+PyGTK record/playback module (gtkusecase.py)
+    - Widget handling support / improvement
+	gtk.ComboBox selections, entirely new
+	gtk.CellRendererText user edits, entirely new
+	gtk.Widget right clicks (previously only handled on gtk.TreeView)
+	gtk.CheckMenuItem and gtk.CellRendererToggle work like gtk.ToggleButton now
+	  (Basically separate names for enabling and disabling)
+    - Programmatic change handling improvements :
+	TreeView selections caused indirectly by collapsing rows are no longer recorded
+    - New script (pyusecase -s) to list the supported widgets
+    - Slow motion replay doesn't freeze the GUI any more (works with timeouts rather than sleeps)
+    - createShortcutBar now module-level function and basically is the API (barring back-compatibility)
+    - Automatic handling of application calling stop_emission method in a handler.
+	(Prevent it from disabling recording). Does not yet handle returning False.
+    - Now automatically handle application calling gtk.events_pending
+	Basically preventing a hang because of PyUseCase's idle handler causing it to always return True.
+    - Better error handling for gtk.TreeView events
+PyGTK Auto-logging (gtklogger/*)
+    - Widget description support / improvement
+	gtk.CellView entirely new
+	gtk.ToggleButton redone
+	gtk.HButtonBox now logged horizontally like gtk.HBox
+	gtk.TreeView works also when the data is not in the gtk.TreeModel but is found via set_cell_data_func
+	gtk.Menu only gets described when it is visible, like everything else
+	gtk.TextView description no longer discards leading whitespace
+	gtk.Image :
+	  states file name if created with gtk.gdk.pixbuf_new_from_file
+	  states XPM and a number if created with gtk.gdk.pixbuf_new_from_xpm_data
+	  can be given a name in the code via image.set_data("name", "My Image")
+    - Widget update description support / improvement
+	gtk.Window now describes changes of title
+    - Ordering of visibility/sensitivity change descriptions now sorted
+	(doesn't depend on order of object creation in the app)
+
+Version 3.0.1:
+-------------
+Enhancement/bugfix:
+    - Now automatically update the UI map file appropriately when a widget is named
+Bug fixes:
+    - Auto-logging now ignores tooltip windows, preventing sporadic description of them when system is loaded
+    - Fixed stacktrace from logging gtk.EntryCompletion windows
+    - Check Python version >= 2.4
+    - Show help on no args instead of stacktrace
+    - Update the correct UI map file when there are several and one already has a matching section
+    - Don't stacktrace if gtk.TreeView has no model attached
+    - Don't stacktrace if gtk.TreeView has non-unique full paths
+    - Don't stacktrace if gtk.ComboBox is empty or has no model attached
+    - Don't insert shortcuts if additional commands are executed in between their component parts
+
+Version 3.1
+-----------
+Enhancements:
+    - Usecase name entry dialog now shows you a preview of the current usecase as you type
+    - Usecase name entry dialog now uses descriptive action names instead of PyGTK signal names
+    - Support around gtk.ToggleToolButton and gtk.ToolAction proxies much improved
+	(both record/playback and logging)
+    - Label widgets for gtk.Frame and gtk.Expander now handled in a generic way
+	Will mean the format of the log will probably change for these widgets
+    - Logging of gtk.Image much improved
+	Support animations, display filenames provided by "set_from_file", find images that are children of buttons
+Bug fixes:
+    - Workaround for GTK 2.10 bug where updates sent after main loop exited
+    - Don't stacktrace if gtk.ProgressBar has no text on it
+    - Fix logging bug where the last character of 2-line outputs got moved after the "property descriptions"
+    - Don't record a file selection for gtk.FileChooser when the folder is changed to a subdirectory
+    - Don't stacktrace when a non-existent file is selected in gtk.FileChooser
+
+Version 3.2
+-----------
+Tkinter support:
+    - Basic Tkinter support added which should suffice for simple applications. Both record/playback and autologging.
+	See website for which widgets are supported.
+PyGTK Enhancements:
+    - gtk.TreeView logging improved
+	Now describes foreground colours and font weight, if set
+    - Non-stock images present in toolbar items are now logged
+    - Additional entries added to gtk.ComboBox and gtk.ComboBoxEntry are now noticed and logged
+    - "Name chooser" UI is now a separate process, can be run at any point, not just after initial recording.
+    - Programmatic deselection of gtk.TreeView rows caused by hiding a row won't be recorded any more
+    - Programmatic change caused by gtk.TreeModelFilter.refilter calls won't be recorded either
+Bug fixes:
+    - Don't stacktrace logging a gtk.Paned of size zero.
+    - Don't rely on widget class names in case the application has its own classes with the same names.
+    - Don't assume the application has different gtk.CellRenderers for each gtk.TreeViewColumn any more.
+    - Better error handling if invalid path given for record script
+    - Now works to clear the default map file with -m ''
+    - Don't crash if application installs its own signal handler with signal.SIG_IGN
+	
+Version 3.2.1
+-------------
+Bug fixes:
+    - Tkinter.Entry handling now deals with non-alphanumeric characters properly
+    - Usecase names are now collected properly even if the application exits with an exception 
+	(particularly SystemExit is important as it's not really an error)
+
+Version 3.3
+-----------
+General:
+    - Try to support PyGTK 2.16 now
+    - Can now configure PyUseCase logging with -L <logconfigfile> via standard Python logging format files
+    - Usecase name chooser no longer stacktraces on an explicit local path (-m mapfile)
+	
+Tkinter Record/Playback:
+    - New widgets supported for record/playback:
+	Tkinter.Canvas
+	Tkinter.Checkbutton
+	Tkinter.Listbox
+    - Changed from using after_idle to after(0... for replaying
+	Otherwise application calls to "after" get blocked
+    - Replayer added just before mainloop entered
+	Reduces risk of it trying to operate before widgets are visible
+    - Many more variants of configuring Buttons and Checkbuttons now picked up correctly
+    - Now intercept Tkinter.Toplevel.wait_window so that it does nothing when replaying
+	Prevents it from blocking idles and hence replayer. Cannot work out why this method
+	is useful anyway, it doesn't appear to achieve anything.
+Tkinter Autologging:
+    - New widgets supported for autologging only
+	Tkinter.LabelFrame
+	Tkinter.Menubutton
+    - Many more widget updates now picked up
+	e.g. Tkinter.Toplevel, changes of title
+    - Visible borders on Tkinter.Frame get described
+    - Layout description improved where items at the bottom are concerned
+    - Autologging now picks up widget state, i.e. whether they are greyed out or not
+    - Popup menu submenus now get logged properly
+Tkinter bugfixes:
+    - Tkinter.Text in a dialog no longer causes stacktraces after the dialog is closed
+    - Tkinter.Menu items other than the last one can now be selected (!)
+    - Don't post popup menus when replaying on Windows, otherwise replay hangs
+
+PyGTK Record/Playback:
+    - New widgets supported for record/playback:
+	gtk.TextView (previously only autologging)
+    - Introduced convention for indexing TreeViews where the labels stretch across multiple lines 
+PyGTK Autologging:
+    - New widgets supported for specific autologging:
+	gtk.SpinButton (previously logged as a gtk.Entry)
+    - gtk.TreeViews which set both foreground and background colour now log both these values 
+PyGTK Bugfixes:
+    - Don't stack trace on PyGTK 2.16 with gtk.TreeViewColumn with no title
+    - gtk.gdk.color_parse no longer causes stacktraces on PyGTK 2.16
+    - gtk.MenuItems built by UIManager no longer causes stacktraces on PyGTK 2.16
+    - Don't stack trace on gtk.TreeView with no model attached, even if there is a matching entry in the UI map.
+    - Window closure now recorded correctly if application close handler hides the window
+    - Don't try to monitor combo box popup windows, also if they aren't menus
+
+Version 3.4
+-----------
+General:
+    - Now requires at least Python 2.6 (PyUseCase 3.3 supported back to Python 2.4)
+    - New mechanism to plug in support for your own custom widgets
+	See the website for more information about this
+    - Old instrumentation-based interface from PyUseCase 2.x is now removed
+	Anyone still using it will need to use PyUseCase 3.3 to migrate before going to 3.4 or later
+
+General bug fixes:
+    - Don't try to record SIGBUS or SIGSEGV : these generally signify internal errors
+
+Basic wxPython support added:
+    - Somewhat alpha status right now.
+	Supports a handful of widget types: wx.Button, wx.TextCtrl, wx.ListCtrl, wx.Frame.
+	Many thanks to Cliff Xuan who is driving this forward.
+
+Tkinter bugfixes:
+    - Don't stacktrace if idle handlers get called when application is already destroyed
+
+PyGTK Record/Playback:
+    - Now support gtk.Dialog.run directly.
+	It's previously been documented as not working and required changing code to avoid calling it.
+    - No longer assume that gtk.Dialog response IDs will be the standard ones, i.e. gtk.RESPONSE*
+	Should now work with anything as response IDs.
+PyGTK Autologging:
+    - Now logs when a window is maximized programatically
+    - Now lists entry completions shown when text is entered in a gtk.Entry
+    - gtk.TreeView description now includes selections, marked by '*'
+    - gtk.Label descriptions now include markup, if any.
+
+Version 3.4.1
+-------------
+General:
+    - Support restored for Python 2.5 (otherwise it wasn't usable under either Maemo or Jython, both of which are becoming interesting)
+
+Internal:
+    - Tidied up everything to be under a single "usecase" package and added to PyPI
+	Means "createShortcutBar" should be called from this module instead of "gtkusecase".
+    - Migrated from ndict to ordereddict which is part of Python 2.7
+
+Proof of concept support for hildon widget set added:
+    - GUI platform based on GTK and used on Nokia's Maemo platform for smartphones.
+	Not much more than a proof of concept and a basis to build on. Currently supports
+	hildon.AppMenu, hildon.EditToolbar, hildon.GtkTreeView and hildon.CheckButton.
+
+PyGTK bugfixes:
+    - Fixed autologging bug in gtk.TreeView when updating information created through data_func interfaces
+    - Fixed record/playback bug when using gtk.Dialog.run on dialogs containing widgets with state 
+	(e.g. gtk.CheckButton, gtk.Entry)
+    - Fixed stacktrace when gtk.Button.get_image() returns something that isn't a gtk.Image
+    - Now handle gtk.TreeViews that are set up using insert_column_with* methods
+    - Recording / playing back now works when editing multiline text in a gtk.TextView
+    - Removed buggy support for recording and playing back dragging of gtk.Paned 
+	Was more trouble than it was worth.
+
+wxPython improvements:
+    - Basic support for wx.Dialog added (thanks Cliff Xuan)
+
+Version 3.5
+-----------
+Support for Java GUIs using SWT/Eclipse RCP added.
+    - Based on the SWTBot tool. (Thanks to them for a great tool!)
+	Regard as Beta status for now. See website for details.
+
+General enhancements:
+    - Shortcut functionality now usable in general
+	Was previously tied to PyGTK plugin
+	GUI is still PyGTK only, but now easy to make your own shortcuts by just editing files. See website for details.
+
+General bugfixes:
+    - Various fixes to shortcuts insertion mechanism
+    - Correctly handle the situation where several widgets have the same identifier but only one is visible/enabled
+    - "Name Chooser" UI now handles encodings other than UTF-8 for unicode.
+    - Apostophes in application labels don't screw up the "Name Chooser" UI or the UI map file any more
+    - No longer crashes with invalid locale
+    - Replayer handles repeated application events in a consistent way with the recorder
+    - State change events (e.g. text box edit) in modal dialogs now handled properly
+
+Tkinter bugfixes:
+    - No longer fails with non-ASCII text in menu item labels
+    - Handle top level windows that are children of other widgets properly
+
+wxPython bugfixes:
+    - Prevent occasional spurious output on Windows
+
+Version 3.5.1
+-------------
+
+General bugfixes:
+    - Source distribution corrected for Python < 2.6 (and hence Jython)
+	Will now work to install there using pip or easy_install
+    - "Name Chooser" UI now shows arguments also when usecase name has not been chosen yet
+    - "Name Chooser" UI now handles encodings other than UTF-8 for unicode (an additional issue fixed)
+    - Error message now distinguishes between failing to lookup in UI map file, and failing to find referenced widget
+
+SWT/Eclipse RCP enhancements:
+    - Description of empty labels improved
+    - Menu items changing state (for example being enabled/disabled) now get noticed and described
+    - Can now record and replay changes of "active part" (RCP only)
+
+SWT/Eclipse RCP bugfixes:
+    - If the first instruction is "wait for", don't attempt to describe anything before that is done
+	Lead to indeterminism
+    - Error message instead of stacktrace if SWTBot isn't installed
+    - Waiting mechanism around RCP jobs is now more robust, timing more correct
+    - Fixed indeterminism in browser describer between "about:blank" and "".
+
+PyGTK bugfixes:
+    - Recorder now works on code where dialogs/windows are destroyed from handlers attached to child widgets
+    - gtk.Dialog.connect now returns handler IDs, so subsequent disconnect etc operations should work correctly
+
+Version 3.6
+-----------
+Renamed to StoryText
+    - The Py is misleading now we support Java (Swing/Eclipse). Also "UseCase" is a bit too RUP-like.
+	Agile talks about Story testing a lot now.
+	In any case, any existing test suites will need to:
+	  - use TextTest 3.22
+	  - rename pyusecase_files to storytext_files
+	  - update all references to the new name
+	  - TextTest 3.22 will now set STORYTEXT_HOME instead of USECASE_HOME. StoryText alone understands either.
+
+Support for Java Swing GUIs added.
+    - Based on RobotFramework's SwingLibrary.
+	Regard as Beta status for now. Used on two real GUIs so far. See website for details.
+
+Beginning of support for GEF (extension of SWT) applications.
+    - Not production ready for real applications. Next release hopefully will be.
+
+General enhancements:
+    - Usecase name chooser gained a Cancel button
+	so you aren't forced to enter names if you really don't know what you did
+    - Handle application events that happen many times
+	We now count the number of times it happens
+
+SWT/Eclipse RCP enhancements:
+    - Support for drop-down ToolItems added (i.e. using the drop down menu)
+    - Interacting with Text widgets now sets the focus
+	Can be important in some contexts
+    - Description support added for JFace ControlDecorations
+
+PyGTK enhancements:
+    - Support recording of Tree Selections that are disallowed via set_select_function 
+	(to test that they ae disallowed...)
+
+General bugfixes:
+    - Error messages don't write misleading things about actions with no usecase name entered
+    - Use of shortcuts no longer suppresses following application events
+    - Reset application events in replayer also when events have already happened
+    - When new names are introduced, copy rather than remove old sections in UI map file
+	Not all widgets matched by the old section have necessarily been named
+    - Handle situation where an application event is triggered in a listener
+	Make sure recording happens in the right order
+    - Application event printouts should be deterministic now
+
+SWT/Eclipse RCP bugfixes:
+    - Custom widget plugin now working for Eclipse RCP
+    - Installer bugs under Windows fixed
+    - Fixed race condition which led to occasional ClassLoader exceptions finding context menus
+    - Job handling more reliable and deterministic
+	Less prone to missing events at the start of the usecase
+    - Browser description improved
+	Now handles HTML text that is set as well as URLs. Also parses HTML tables if they exist.
+    - Grid layout descriptions made more compact
+	If overlapping the descriptions is possible because of blank cells, it will, which leads to less wide files.
+
+PyGTK bugfixes:
+    - TreeSelections programatically changed by set_mode no longer get recorded.
+    - Now handles dialogs that existed before StoryText was enabled
+	In case it's enabled programmatically
+
+
+Version 3.7
+-----------
+Migration:
+    - Eclipse RCP applications will need to reinstall the plugin (org.eclipse.swtbot.testscript)
+
+Support for GEF is much more sophisticated and is now in production on one application. Regard as Beta.
+    - There is a separate installable plugin for this now, org.eclipse.swtbot.gef.testscript
+    - Selection, drag+drop supported
+
+Support for wxPython has moved forward a great deal (Beta) - it now supports (in addition):
+    - widgets added "on the fly" (not just ones that were there at the start as before...)
+    - wx.Menu (including some support for popups)
+    - wx.CheckBox
+    - wx.FileDialog
+    - wx.StaticText
+    - wx.Choice
+    - UI map doesn't get fooled by internally generated "names" any more
+    - Better layouts in the describer
+
+General enhancements:
+    - Application event handling handles many more complicated situations
+	Handle application events inside dialogs, interleaved with state-change events, repeated events in categories etc.
+	Also time out after 60 seconds instead of hanging forever. Can be configured with "-t" option.
+    - Shortcut mechanism now handles arguments
+	To start with, uses $ in the file name, and $ inside the file, and matches arguments in order
+	See website for more details.
+    - If controls aren't present, now wait a while before giving up
+	Crude version of application event mechanism for simple situations
+    - Usecase name chooser dialog now has scrollbars if needed
+    - Maximum output width is now configurable using -M argument.
+
+SWT/Eclipse RCP enhancements:
+    - Added support for checkboxes
+    - Added support for org.eclipse.ui.forms.ExpandableComposite
+    - Added support for typing text into text fields and combo boxes (not just setting text)
+    - Can now record/playback pressing Enter in text fields/combo boxes
+    - Can now record/playback clicking column headers and editing cells in Tables
+    - Now describe popup menu status changes
+    - Support "radio toolbar items"
+    - Now support RCP's "drop-down toolbar items" (as in the perspective changers in Eclipse)
+    - RCP Part activation now uses part title instead of ID (this last might not be unique)
+    - Now mostly use image names in describer if these are requested
+    - Describe vertical separators differently from horizontal ones
+
+Tkinter enhancements:
+    - Grids are now formatted as in the other toolkits, and hence look neater
+    - Now works under Python 3
+    - Handle row spans in grid layouts
+
+General bugfixes:
+    - Can now handle more than one (different) shortcut in the same usecase.
+    - Can reuse the same shortcut multiple times also if it ends with an application event.
+    - Don't record Text modifications if the value is unchanged
+    - Warn if we have duplicated sections in the UI map file (instead of silently ignoring one of them)
+    - Produce a nice error if the UI map file can't be parsed
+    - Fixed various race conditions in the replayer
+    - label finding mechanism is easier to configure (in case your application puts extra labels in between, such as "=")
+    - In slow-motion replay, description now printed after the sleep (helps discover missing app events)
+    - Eliminated some duplicate description where many things changes state at once
+    - Remove race condition when first line of a shortcut is an application event
+    - Don't use column-formatting on grids with more than one row, too hard to read
+
+SWT/Eclipse RCP bugfixes:
+    - Custom widget plugin now working for Eclipse RCP, also when event types are overridden
+    - Workaround for SWTBot with Radio Buttons in Eclipse 3.5
+    - Decide job name on scheduling, not on completion, otherwise it can be indeterministic
+    - Describer less prone to occasionally describe tooltip windows now
+    - Fix stacktrace if horizontal span in grid layout is larger than the number of columns
+    - Readonly text fields never record anything
+    - Bug fixes for describer laying out HTML tables in Browsers properly
+	(e.g. non-breaking spaces and unprintable characters...)
+
+Version 3.8
+-----------
+Migration:
+    - Swing support now requires at least SwingLibrary 1.3
+	1.4.1 is now packaged, see below. 1.2 does not work any more.
+    - SWT descriptions have changed (same information, different layout). Will need to update TextTest results
+
+The "NameChooser" UI has been generalised and enhanced:
+    - Can now be used on any usecase file, not just when entering new names
+    - Shows a hierarchical view, including shortcuts and UI map definitions
+    - Can be used to create new shortcuts
+    - Now the default editor for usecase files in TextTest 3.24
+
+General enhancements:
+    - Comments are now preserved between replayed and recorded versions of a usecase
+	Useful from TextTest, where they no longer need to be filtered
+    - Added a retry loop when widgets are disposed, disabled or invisible in case they become enabled
+	Removes the need for some "application events", though not all
+    - File polling mechanism added
+	Can synchronise on external issues by polling a file and generating an application event if it is created or removed
+	See docs for "-f" and "-F"
+    - Can now exclude certain widget types from the descriptions
+	See docs for "-X"
+
+PyGTK enhancements:
+    - Now support GUIs made with gtk.Builder (mostly Dialogs and TreeViews that didn't work before)
+    - Stock buttons described as stock buttons. Don't describe images, which are theme-dependent
+
+Swing enhancements:
+    - JFileChooser now handled correctly
+	(ignore theme-specific names, don't describe the widget itself, describe the FileFilters at the bottom properly)
+    - Support for JToggleButton added
+    - Unicode support added
+    - SwingLibrary now packaged with StoryText and included in the download
+	TextTest finds it automatically. Using StoryText alone you still need to add it to the classpath.
+
+SWT/Eclipse RCP/GEF enhancements:
+    - Added support for CComboBox
+    - Descriptions of updates to MenuBar, ToolBars changed (only print lines that have changed, describe what changed)
+    - Descriptions of Trees show if elements are expandable. Expanding an unexpandable item now fails instead of doing nothing.
+    - Finding GEF Figures on a FigureCanvas now works even if scrolling is required to find them
+    - GEF selection and dragging now handles figures which are partially obscured by other figures
+    - GEF support is better at not recording programmatic selections
+
+General bugfixes:
+    - Unicode characters in grid layouts don't stacktrace any more
+    - Don't fail if square brackets present in widget labels (UI map syntax problems)
+    - Grid formatter now works even if span values provided from e.g. SWT are nonsensical (adjusts them appropriately)
+    - Recorder now handles simultaneous state changes at different delay levels
+    - Shortcuts can now contain comments and blank lines
+    - Handle case where one shortcut is a subset of another
+    - Browser description now uses HTML parser and not XML parser, less weird problems
+    - Various complicated application event bugs fixed
+    - Various problems when there is no active shell fixed
+    - Various problems with automatically inserting shortcuts when recording fixed
+    - Timeouts now broken up into several waits, more resilient to process being suspended
+    - Various fixes handling shortcuts with arguments
+    - Bug with selecting in non-editable Comboboxes fixed
+
+SWT/Eclipse RCP bugfixes:
+    - Don't find identifying labels from previous rows of grids
+    - Handle MenuItems with reserved dialog texts on them
+    - Try hard not to allow Python exceptions back to Eclipse, which tends not to like them very much
+    - Image naming is now more reliable. Re-enabled it for control decoration images for this reason.
+    - Expanding ExpandableComposite widgets (RCP) no longer moves the mouse pointer around
+    - Table handling deals properly with nameless columns and entirely empty tables
+    - Table description no longer describes hidden columns
+    - Handle RCP view menus in a better way
+    - Tree row selection now works more like doing it by hand (no longer using SWTBot's method)
+    - Fixing problems with text edit inserting and removing, generally making mistakes when typing should no longer record
+    - Now handle checkboxes embedded in tables
+    - Workarounds added for NPEs in SWTBot
+
+Swing bugfixes:
+    - Recorded of tab changes in JTabbedPane simpler and more reliable
+    - Don't fail if AWT components present as well as Swing ones
+    - JTable: don't assume getRowCount and getValueAt are consistent, they may not be
+
+wxPython bugfixes:
+    - Handle PySimpleApp properly
+
+Version 3.8.1
+-------------
+General bugfixes:
+    - Don't discard empty rows in column layouts, can be important for alignment
+	Note this change may result in extra blank lines in your described text, and hence TextTest tests will need saving.
+
+Bugfixes in new editor GUI:
+    - Fixed problem with new editor creating shortcuts where arguments got erroneously converted to lower case
+    - Shortcut creation dialog in new editor is neater and less likely to be the wrong size now
+    - Now handle literal $ symbols in shortcuts (previously got confused with the argument syntax)
+
+SWT/Eclipse RCP bugfixes:
+    - Can now handle multiple ControlDecorations on the same widget. Previously only noticed the first one.
+
+PyGTK bugfix:
+    - Now notice changes of Frame label in the describer text (was missed earlier)
+
+Version 3.8.2
+-------------
+Bugfixes in new editor GUI:
+    - Fixed problem where short arguments led to them being inserted in capitals in the file
+    - Fixed problem where unused shortcut arguments appeared in the preview after creating a shortcut
+    - If a shortcut should be inserted several times in the usecase file, it now will be.
+
+SWT/Eclipse RCP bugfixes:
+    - Can now handle selecting multiple nodes in a Tree
+    - Deselecting in Trees now records properly
+    - Fixed bug where some programmatic changes from typed text fields updating each other got recorded
+
+New feature:
+    - Shortcuts can be inserted from the command-line via --insert-shortcut. Not very useful until it's integrated
+      into TextTest, which it hopefully will be in TextTest 3.25.
+
+Version 3.9
+-----------
+General enhancements:
+    - Shortcuts inserted in more cases, for example when extra waits appear at the end
+    - Editor GUI now supports renaming usecase names (integrates with TextTest 3.25)
+    - Editor GUI now supports updating the UI map file directly
+    - Editor GUI shortcut creation integrates with TextTest 3.25
+
+General bugfixes:
+    - Fixed complicated application event bug
+    - Table indexing doesn't fail when no columns are unique
+    - Now handle leading spaces in arguments
+    - Give error instead of hanging if shortcut calls itself
+
+SWT/Eclipse RCP enhancements:
+    - Support added for SWT Spinner widgets
+    - Support added for double-clicking in SWT Table widgets
+    - Describer support added for Groups
+    - Now handle MenuItems with style Radio correctly (workaround SWTBot bug)
+    - Now handle multiple RCP views with the same title
+    - Now differentiate between MenuItems with identical names, use parent menu name as context
+    - Now describe status of ToolBar items with style Check or Radio
+    - Remove mouse pointer from the window at the start, can cause unintended mouseovers and effects
+    - Describer handles FormLayout correctly
+    - Describer handles Table/Tree editor fields in a better way
+    - Browser output from files is now parsed and inlined directly. Only external URLs are left alone
+    - Find context menus belonging to Tables
+    - Images in browser output are now described
+    - No longer describe updates outside the currently active Shell
+    - Can now type free text on the keyboard, mostly to allow getting past native dialogs. Cannot record this, use TypeText as event type under a Shell directly in the UI map file.
+
+
+SWT/Eclipse bugfixes:
+    - Rewrote tab close handling, should be more reactive and less brittle now
+    - Don't record when RCP view selections are caused by other views being closed
+    - Don't record RCP view selection if there is only one view (cannot be relevant)
+    - Don't stacktrace if Browser contains HTML with duplicated end tags
+    - Handle windows line-endings and tab characters from HTML properly
+    - Don't stacktrace if widgets with disposed children are shown
+    - Introduced cache for image naming, speeds up initial monitoring
+    - Fix recording bug which affected some ComboBoxes
+    - Fix CCombo activation bugs
+    - Workaround SWTBot in table row selection
+
+GEF bugfixes
+    - Various crash fixes for draw2d describer
+    - When we move the mouse pointer to select figures, move it back again afterwards (avoids accidental mouseovers)
+    - Handle figures changing name, cache now updated correctly
+    - DragNDrop error handling enhanced, better errors if the drop location can't be found
+    - Removed Key Assist menu item added by SWTBot
+
+Swing bugfixes:
+    - Fixed shutdown hang with Java 7 on Windows
+    - Fix back-compatibility breakages with SwingLibrary 1.4.1, now the default version. Remove hacks for bugs now fixed in that version.
+
+PyGTK bugfixes:
+    - Fixed FileChooser crash on PyGTK 2.24, working around https://bugzilla.gnome.org/show_bug.cgi?id=688036
+
+Version 3.10
+------------
+General enhancements:
+    - Shortcuts containing shortcuts recursively are now properly supported
+    - Editor now allows you to choose how you identify a widget
+	Presents a drop-down list instead of just choosing what it thinks is "best"
+    - Editor now supports renaming and deleting of shortcuts
+    - Can navigate the Editor table by pressing Enter, which moves down a row on all rows except the first
+    - Editor now warns you if you enter a duplicate name (but lets you if you insist)
+    - Can set minimum field widths in tables on the command line (-w).
+	Useful when table contents have indeterminstic length, affects the whole table layout
+    - Better error messages now if several different usable widgets match the properties given in the UI map file 
+    - Can now use commas in shortcut names
+    - Now allow trailing spaces in action arguments
+    - If an instruction maps to several widgets in the UI map file, pick a random one
+	Often a Menu item and a toolbar button point at the same thing: the user doesn't really care and doesn't want different names
+    - New syntax e.g. -X Menu!File, meaning ignore all menus except the one called "File".
+	Also -X MenuNOTFile on Windows, (working around Jython bug 1599)
+    - UI map file now supports regular expressions in section names
+	Can only be added in by hand afterwards, editor does not allow it
+
+General bugfixes:
+    - Complete overhaul of unicode (non-ASCII text) handling, should work better across the board now
+    - If delay is provided from both the command line (-d) and TextTest (USECASE_REPLAY_DELAY) use the maximum of them
+    - Editor cleans up properly if shortcuts are added and then Cancel is pressed
+    - Made application event recorder thread-safe
+    - Editor displays widget identifiers with markup characters (e.g. &) properly now
+    - Editor displays lines with the command text in twice correctly now
+    - If instruction is ambiguous between an unusable widget and a usable one, find the usable one instead of failing on the first one
+    - Fixed replayer bug that caused problems when waiting for multiple copies of the same event
+    - Removed functionality that auto-updated UI map file if a widget name/ID was added
+	Caused more trouble than it was worth
+
+SWT/Eclipse RCP enhancements:
+    - UI map inconsistencies fixed
+	Suggested to run the new migrate_uimap.py script from bin directory to ensure compatible with new format
+    - Much support added for dynamically generated menus. Should work better now.
+    - Support combo boxes embedded in toolbars
+    - Support drop-down tool items
+    - Support for content assist events (i.e. pressing control+space to display autocompletions)
+    - Can now generate screenshots with --screenshot on the command line. TextTest 3.26 has a GUI control for this.
+    - Now records keyboard accelerators (as the action they point at, so won't affect replay)
+    - Describer now handles JFace tooltips, both those used per row in Trees and Tables, and custom ones
+	The latter can be disabled with -X CustomTooltip
+    - Describer now shows table column sorting indicator
+    - Describer only describes changes in the currently active window now
+    - Can now provide categories for application events
+	by setting event.data
+    - Can now use SWTBot IDs to identify dialogs for widget context as well as their title
+    - If JFace Action IDs exist, we now use them as one way to identify a widget
+    - Can now have UI map entries for typing and setting text in the same field
+	Recorder will always record typing, but this can be fixed up afterwards if desired
+    - Switching views actually clicks in the new view
+	Programmatic version was too prone to being recorded by mistake when done programmatically
+    - Hooks added to make it easier to configure which Eclipse jobs we listen for
+	environment variable STORYTEXT_SYSTEM_JOB_NAMES read if set, default is all jobs where isSystem() returns False
+    - When describing updates, use a shortened form of the SWTBot ID, if it exists
+    - We now notice if widgets just change places within a structure, and describe this
+    - Job handling enhanced, check for simultaneous jobs started from different threads and assume they are independent
+	Naming is decided at the end, depending on the last relevant event from a particular thread
+    - Browser update events are generated even if the Browser updates to the same contents, can be important
+    - Removed StackedLayout description. It doesn't correspond to anything visible and is just noise for the user, mostly.
+    - Label finding enhanced, will find Labels that are the last child in a parent or sibling Composite
+    - (RCP) If there are multiple usable widgets for an instruction, prefer any widget that is in the active View over those that aren't
+    - (RCP) View toolbars and menus are now identified also with the View ID, for better identification and solving ambiguity
+    - Popup menu contexts refer to widgets they are attached to
+    - Context menu descriptions in GridLayouts will be produced sooner now
+    - Combo objects now listen for Selection rather than Modify events, (as CCombo did before), seems to be more reliable
+	May require UI map updating!
+    - Describer now says which context menu has been updated
+    - Now adds indices to uniquely identify rows in Trees that have the same text
+
+SWT/Eclipse RCP bugfixes:
+    - Error message on classloader clashes instead of crashing. Often caused by Mockito in the product.
+    - Error message replaces stacktrace for additional instructions after the GUI has exited
+    - Fixed bug with Combo box selection amalgamating similar selections
+    - Generate extra Enter keypresses if we can't find a table row and there is an editor active
+    - Don't describe invisible dialogs
+    - Error message selecting TabItem that is already disposed instead of stacktrace
+    - don't monitor widgets if they're shown before the shell they appear in
+    - Error messages when rows in tables or views can't be found: now lists the ones that do exist to aid fixing it
+    - Fixed occasional issue where selecting could be interpreted in recorder as drag and drop if it took too long
+    - Fixed crash describing groups containing formatted layout
+    - Don't assume table indexing is ready if it contains only empty strings
+    - We don't say things have appeared if our description of them is empty any more
+    - Worked around Jython bug 1522 which causes PermGen memory errors occasionally
+    - Handle combinations of literal commas and multiple selection when selecting rows in lists etc
+    - -x option on the command line now works properly for RCP apps
+    - Fixed bug leading to slight indeterminism when expanding ExpandableComposite widgets (RCP)
+
+GEF bugfixes:
+    - Handle literal commas in figure descriptions, comma is used to indicate multiple selection
+    - Drag+drop never recorded on invisible objects any more
+
+Swing bugfixes:
+    - Don't assume Combo Box Editor items are strings any more
+    - Can now add indexes to uniquely identify rows in JTrees that have the same text
+
+WxPython enhancements (thanks to Roger Lindberg):
+    - Support for FileDialog, DirDialog, FileSelector, DirSelector, GetFontFromUser, GetColourFromUser, MessageBox added
+    - Fixed bug which meant checkboxes didn't work on Windows
