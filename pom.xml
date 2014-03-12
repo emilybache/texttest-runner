@@ -24,8 +24,9 @@
   </licenses>
 
   <scm>
-    <url>http://launchpad.net/texttest/tags/texttest-runner-3.26</url>
-    <connection>scm:bazaar:bzr+ssh://bazaar.launchpad.net/~geoff-bache/texttest/tags/texttest-runner-3.26</connection>
+    <connection>scm:git:https://github.com/emilybache/texttest-runner.git</connection>
+    <url>scm:git:https://github.com/emilybache/texttest-runner.git</url>
+    <developerConnection>scm:git:https://github.com/emilybache/texttest-runner.git</developerConnection>
   </scm>
 
   <developers>
